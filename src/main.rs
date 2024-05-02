@@ -22,7 +22,7 @@ fn main() -> anyhow::Result<()>{
     let app = App::spawn()?;
 
     //ultrasonic sensor
-    let ultrasonic = sensor::set_ultrasonic_sensor()?;
+    let ultrasonic = sensor::Ultrasonic::new()?;
 
     //reset button
     let peripherals = Peripherals::take().unwrap();
@@ -42,7 +42,6 @@ fn main() -> anyhow::Result<()>{
             Ok(x) => println!("{}", x),
             Err(_) => {}
         }
-
     }
 }
 

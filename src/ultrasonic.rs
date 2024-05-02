@@ -16,15 +16,17 @@ pub struct Ultrasonic {
     pub echo: PinDriver<'static, AnyIOPin, Input>
 }
 
-pub fn set_ultrasonic_sensor() -> anyhow::Result<Ultrasonic> {
-    let peripherals = unsafe { Peripherals::new() };
-    let trigger = PinDriver::output(peripherals.pins.gpio8.downgrade_output())?;
-    let echo = PinDriver::input(peripherals.pins.gpio5.downgrade())?;
+impl Ultrasonic {
+    pub fn new() -> anyhow::Result<Ultrasonic> {
+        let peripherals = unsafe { Peripherals::new() };
+        let trigger = PinDriver::output(peripherals.pins.gpio8.downgrade_output())?;
+        let echo = PinDriver::input(peripherals.pins.gpio5.downgrade())?;
 
-    Ok(
-        Ultrasonic {
-            trigger,
-            echo
-        }
-    )
+        Ok(
+            Ultrasonic {
+                trigger,
+                echo
+            }
+        )
+    }
 }
