@@ -1,3 +1,4 @@
 [ultrasonic]
 wifi_ssid = "Totalplay-93A2"
 wifi_pass = "93A2BCE4rQ6pq32j"
+base_url = "https://gb5d3dcd8bc55d2-prueba.adb.us-ashburn-1.oraclecloudapps.com/ords/prueba/BASUREROS/actualizarBasurero"
