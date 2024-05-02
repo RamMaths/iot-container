@@ -42,6 +42,7 @@ fn main() -> anyhow::Result<()>{
             Ok(x) => println!("{}", x),
             Err(_) => {}
         }
+        FreeRtos::delay_ms(2000);
     }
 }
 
@@ -69,7 +70,6 @@ fn ultrasonic_thread_function(
         let pulse_duration = end_time - start_time;
         distance_status = (pulse_duration as f32 * 0.0343) / 2.0;
         println!("distance: {}", distance_status);
-        tx.send(distance_status)?;
-        FreeRtos::delay_ms(2000);
+        tx.send(distance)?;
     }
 }
