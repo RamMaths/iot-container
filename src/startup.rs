@@ -15,14 +15,16 @@ pub struct Config {
     #[default("")]
     wifi_pass: &'static str,
     #[default("")]
-    base_url: &'static str
+    base_url: &'static str,
+    #[default("")]
+    container_id: &'static str
+
 }
 
 pub struct App {
     pub wifi: EspWifi<'static>,
     pub config: Config,
     pub client: Client
-
 }
 
 impl App {
@@ -31,7 +33,6 @@ impl App {
         let sys_loop = EspSystemEventLoop::take()?;
         let nvs = EspDefaultNvsPartition::take()?;
         let app_config: Config = CONFIG;
-
 
         let mut wifi_driver = EspWifi::new(
             peripherals.modem,
@@ -58,7 +59,10 @@ impl App {
         println!("IP info: {:?}", wifi_driver.sta_netif().get_ip_info()?);
         log::info!("Should be connected now with credentials: ");
 
-        let client = Client::new(app_config.base_url.to_string())?;
+        let client = Client::new(
+            app_config.base_url.to_string(),
+            app_config.container_id.to_string()
+        )?;
 
         Ok(
             App {
