@@ -33,8 +33,8 @@ fn main() -> anyhow::Result<()>{
     // Configure the watchdog timer
     let config = TWDTConfig {
         duration: std::time::Duration::from_secs(10),
-        panic_on_trigger: false, // Panic if the watchdog triggers
-        subscribed_idle_tasks: enumset::enum_set!(Core::Core1), // Subscribe to idle tasks on Core 0
+        panic_on_trigger: false, // this tells the esp not to Panic if the watchdog triggers
+        subscribed_idle_tasks: enumset::enum_set!(Core::Core1), // Subscribe to idle tasks on Core1 (core reading the ultarsonic sensor)
     };
 
     // Create the TWDT driver
