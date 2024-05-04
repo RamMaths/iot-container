@@ -1,12 +1,15 @@
-use esp_idf_svc::systime::EspSystemTime;
 use ultrasonic::startup::App;
-use ultrasonic::ultrasonic as sensor;
+use ultrasonic::{
+    ultrasonic::Ultrasonic,
+    threads
+};
 use esp_idf_hal::{
-    delay::FreeRtos,
-    gpio:: PinDriver,
+    gpio::{PinDriver, OutputPin},
     peripherals::Peripherals,
 };
 use crossbeam_channel::bounded;
+use esp_idf_hal::cpu::Core;
+use esp_idf_hal::task::watchdog::{TWDTConfig, TWDTDriver};
 
 static ULTRASONIC_STACK_SIZE: usize = 2000;
 
@@ -18,58 +21,59 @@ fn main() -> anyhow::Result<()>{
     // Bind the log crate to the ESP Logging facilities
     esp_idf_svc::log::EspLogger::initialize_default();
 
-    //creating the http server
-    let app = App::spawn()?;
+    // This sets the wifi and creates an http client
+    let mut app = App::spawn()?;
 
     //ultrasonic sensor
-    let ultrasonic = sensor::Ultrasonic::new()?;
+    let ultrasonic = Ultrasonic::new()?;
 
     //reset button
     let peripherals = Peripherals::take().unwrap();
-    let mut button = PinDriver::input(peripherals.pins.gpio15)?;
+
+    // Configure the watchdog timer
+    let config = TWDTConfig {
+        duration: std::time::Duration::from_secs(10),
+        panic_on_trigger: false, // this tells the esp not to Panic if the watchdog triggers
+        subscribed_idle_tasks: enumset::enum_set!(Core::Core1), // Subscribe to idle tasks on Core1 (core reading the ultarsonic sensor)
+    };
+
+    // Create the TWDT driver
+    let mut driver = TWDTDriver::new(peripherals.twdt, &config)?;
+
+    //application hardware
+    let button = PinDriver::input(peripherals.pins.gpio15)?;
+    let mut led = PinDriver::output(peripherals.pins.gpio7.downgrade_output())?;
 
     let (tx, rx) = bounded::<f32>(1);
 
-
     let _ultrasonic_thread = std::thread::Builder::new()
         .stack_size(ULTRASONIC_STACK_SIZE)
-        .spawn(move || ultrasonic_thread_function(ultrasonic, tx))?;
+        .spawn(move || threads::ultrasonic_thread_function(&mut driver, ultrasonic, tx))?;
 
-    let mut distance = 0.0;
+    let mut distance = -1.0;
+    let mut ready = false;
+    let mut already_sent = false;
 
     loop {
         match rx.try_recv() {
-            Ok(x) => println!("{}", x),
+            Ok(x) => {
+                distance = x;
+                ready = true;
+                println!("distance: {}", distance);
+            }
             Err(_) => {}
         }
-    }
-}
 
-fn ultrasonic_thread_function(
-    mut ultrasonic: sensor::Ultrasonic,
-    tx: crossbeam_channel::Sender<f32>,
-) -> anyhow::Result<()> {
-    let mut distance_status = 0.0;
+        if ready && distance <= 10.0 && !already_sent && distance > 0.0 {
+            //envío petición LLENO
+            app.client.process_request(1, &mut led)?;
+            already_sent = true;
+        } 
 
-    loop {
-        //clean input
-        ultrasonic.trigger.set_low()?;
-        FreeRtos::delay_ms(2);
-        // Send a 10ms pulse to the trigger pin to start the measurement
-        ultrasonic.trigger.set_high()?;
-        FreeRtos::delay_ms(10);
-        ultrasonic.trigger.set_low()?;
-
-        while !ultrasonic.echo.is_high() {}
-
-        let start_time = EspSystemTime {}.now().as_micros();
-        while ultrasonic.echo.is_high() {}
-        let end_time = EspSystemTime {}.now().as_micros();
-
-        let pulse_duration = end_time - start_time;
-        distance_status = (pulse_duration as f32 * 0.0343) / 2.0;
-        println!("distance: {}", distance_status);
-        tx.send(distance_status)?;
-        FreeRtos::delay_ms(2000);
+        if ready && distance > 10.0 && already_sent {
+            //envío petición VACIO
+            app.client.process_request(0, &mut led)?;
+            already_sent = false;
+        }
     }
 }

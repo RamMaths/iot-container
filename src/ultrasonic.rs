@@ -1,14 +1,12 @@
 use esp_idf_svc::hal::peripherals::Peripherals;
 use esp_idf_hal::gpio::{
     AnyOutputPin,
-    AnyInputPin,
     Output,
     OutputPin,
     Input,
     IOPin,
     AnyIOPin,
-    PinDriver,
-    Pull
+    PinDriver
 };
 
 pub struct Ultrasonic {
@@ -19,7 +17,7 @@ pub struct Ultrasonic {
 impl Ultrasonic {
     pub fn new() -> anyhow::Result<Ultrasonic> {
         let peripherals = unsafe { Peripherals::new() };
-        let trigger = PinDriver::output(peripherals.pins.gpio8.downgrade_output())?;
+        let trigger = PinDriver::output(peripherals.pins.gpio4.downgrade_output())?;
         let echo = PinDriver::input(peripherals.pins.gpio5.downgrade())?;
 
         Ok(

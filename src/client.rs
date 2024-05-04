@@ -5,15 +5,20 @@ use esp_idf_svc::http::{
     client::Configuration
 };
 use embedded_svc::http::client::Client as HttpClient;
+use esp_idf_hal::gpio::{PinDriver, AnyOutputPin, Output};
 // use embedded_svc::http::client::Response;
 
 pub struct Client {
     http_client: HttpClient<EspHttpConnection>,
-    base_url: String
+    base_url: String,
+    container_id: String
 }
 
 impl Client {
-    pub fn new(base_url: String) -> anyhow::Result<Client> {
+    pub fn new(
+        base_url: String,
+        container_id: String
+    ) -> anyhow::Result<Client> {
         let connection = EspHttpConnection::new(&Configuration {
             use_global_ca_store: true,
             crt_bundle_attach: Some(esp_idf_svc::sys::esp_crt_bundle_attach),
@@ -25,16 +30,35 @@ impl Client {
         Ok (
             Client { 
                 http_client,
-                base_url
+                base_url,
+                container_id
             }
         )
     }
 
-    pub fn post_request(&mut self, state: u8) -> anyhow::Result<()> {
+    pub fn process_request(
+        &mut self,
+        state: u8,
+        led: &mut PinDriver<AnyOutputPin, Output>
+    ) -> anyhow::Result<()> {
+
+        led.set_high()?;
+        self.send_data(state)?;
+        led.set_low()?;
+
+        Ok(())
+    }
+
+    fn send_data(
+        &mut self,
+        state: u8
+    ) -> anyhow::Result<()> {
         // Define the JSON body
+        let state = &format!("{}", state);
+        println!("state: {}, container: {}", &state, &self.container_id);
         let body = json!({
-            "lleno": state,
-            "id_": "1"
+            "lleno": &state,
+            "id_": &self.container_id
         });
         let binding = body.to_string();
 
