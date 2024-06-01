@@ -1,19 +1,16 @@
-use ultrasonic::startup::App;
-use ultrasonic::{
-    ultrasonic::Ultrasonic,
-    threads
-};
-use esp_idf_hal::{
-    gpio::{PinDriver, OutputPin},
-    peripherals::Peripherals,
-};
 use crossbeam_channel::bounded;
 use esp_idf_hal::cpu::Core;
 use esp_idf_hal::task::watchdog::{TWDTConfig, TWDTDriver};
+use esp_idf_hal::{
+    gpio::{OutputPin, PinDriver},
+    peripherals::Peripherals,
+};
+use ultrasonic::startup::App;
+use ultrasonic::{threads, ultrasonic::Ultrasonic};
 
 static ULTRASONIC_STACK_SIZE: usize = 2000;
 
-fn main() -> anyhow::Result<()>{
+fn main() -> anyhow::Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
     // implemented by esp-idf-sys might not link properly. See https://github.com/esp-rs/esp-idf-template/issues/71
     esp_idf_svc::sys::link_patches();
@@ -68,9 +65,9 @@ fn main() -> anyhow::Result<()>{
             //envío petición LLENO
             app.client.process_request(1, &mut led)?;
             already_sent = true;
-        } 
+        }
 
-        if ready && distance > 10.0 && already_sent {
+        if ready && distance > 10.0 && already_sent && button.is_low() {
             //envío petición VACIO
             app.client.process_request(0, &mut led)?;
             already_sent = false;
