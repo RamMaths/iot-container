@@ -31,14 +31,15 @@ Now clone the repository and build the project. (Note that if you are using anot
 
 ```sh
 git clone https://github.com/RamMaths/iot-manager
-cargo build --release
+# this flag will help us reducing binary size
+RUSTFLAGS="-Zlocation-detail=none" cargo build --release
 ```
 
-If you succesfully build the project now you have to flash the board. For this I am using [espflash](https://docs.esp-rs.org/book/tooling/espflash.html). Since our application has some dependencies our binary will get a bit larger than we might expect thus we have to extend the flash size.
+If you succesfully build the project now you have to flash the board. For this I am using [espflash](https://docs.esp-rs.org/book/tooling/espflash.html).
 
 ```sh
 # example
-espflash flash ./target/xtensa-esp32s3-espidf/release/ultrasonic -p /dev/cu.usbmodem1301 --flash-size 16mb --monitor
+espflash flash ./target/xtensa-esp32s3-espidf/release/ultrasonic -p /dev/path/to/your/esp
 ```
 
 ## Software Explanation
